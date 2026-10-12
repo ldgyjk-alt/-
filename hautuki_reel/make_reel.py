@@ -32,9 +32,9 @@ def src(name):
 
 # (파일, 시작, 길이, 추가 필터)
 CLIPS = [
-    ("IMG_7585", 0.0, 3.6, ""),            # 성장 기록 벽
-    ("IMG_7588", 4.0, 5.0, ""),            # 펜으로 키 표시
-    ("IMG_7617", 1.2, 14.0, ""),           # 패치 개봉 -> 부착 -> 미소
+    ("IMG_7617", 1.2, 14.0, ""),           # 첫 화면: 패치 개봉 -> 부착 -> 미소
+    ("IMG_7585", 0.0, 4.6, ""),            # 성장 기록 벽 + 세 아이 키
+    ("IMG_7588", 6.0, 4.6, ""),            # 펜으로 키 표시
     ("IMG_7586", 6.0, 4.6, "transpose=1,"),  # 키 재기(원본이 옆으로 찍힘)
     ("IMG_7587", 0.0, 5.0, ""),            # 엔딩
 ]
@@ -47,13 +47,14 @@ for i, c in enumerate(CLIPS):
 TOTAL = t + XF
 s = starts
 CAPTIONS = [
-    (s[0] + 0.2, s[1] + 0.2, "우리 집 성장 기록 벽", "아이들 키, 매번 재면서 기록 중이에요"),
-    (s[1] + 0.3, s[2] + 0.1, "오늘도 키 재는 날!", "부모라면 늘 신경 쓰이는 우리 아이 키"),
-    (s[2] + 0.3, s[2] + 5.6, "하우투키 첫 개봉!", "키즈 웰니스 영양소 패치, 처음 써봐요"),
-    (s[2] + 5.8, s[2] + 10.4, "떼서 붙이면 끝!", "아이 혼자서도 쉽게 붙였어요"),
-    (s[2] + 10.6, s[3] + 0.1, "비타민D3 + 비타민K2", "어린이·청소년기 영양·흡수 균형 서포트"),
+    (0.0, s[0] + 5.6, "하우투키 첫 개봉!", "키즈 웰니스 영양소 패치, 처음 써봐요"),
+    (s[0] + 5.8, s[0] + 10.4, "떼서 붙이면 끝!", "아이 혼자서도 쉽게 붙였어요"),
+    (s[0] + 10.6, s[1] + 0.1, "비타민D3 + 비타민K2", "어린이·청소년기 영양·흡수 균형 서포트"),
+    (s[2] + 0.3, s[3] + 0.1, "오늘도 키 재는 날!", "부모라면 늘 신경 쓰이는 우리 아이 키"),
     (s[3] + 0.3, s[4] + 0.1, "국내 유일\n어린이 인체적용시험", "서울대학교 특허 흡수율 업그레이드 시스템"),
 ]
+HEIGHTS = [("첫째", "161"), ("둘째", "144"), ("셋째", "133")]
+HEIGHTS_TIME = (s[1] + 0.3, s[2] + 0.1)
 END_START = s[4] + 0.3
 
 
@@ -101,6 +102,29 @@ def badge_png(path):
     img.save(path)
 
 
+def heights_png(path):
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    ft = ImageFont.truetype(FONT_HEAVY, 88)
+    fl = ImageFont.truetype(FONT_BOLD, 54)
+    fn = ImageFont.truetype(FONT_HEAVY, 96)
+    title = "사용 시작 전 키 기록"
+    w, h, l, t_ = text_size(d, title, ft)
+    d.text(((W - w) / 2 - l, 760 - t_), title, font=ft, fill="white",
+           stroke_width=9, stroke_fill=(20, 20, 20))
+    y = 920
+    for label, cm in HEIGHTS:
+        box = [150, y, W - 150, y + 150]
+        d.rounded_rectangle(box, radius=40, fill=(255, 255, 255, 235))
+        lw, lh, ll, lt = text_size(d, label, fl)
+        d.text((210 - ll, y + 75 - lh / 2 - lt), label, font=fl, fill=(90, 90, 90))
+        num = f"{cm}cm"
+        nw, nh, nl, nt = text_size(d, num, fn)
+        d.text((W - 210 - nw - nl, y + 75 - nh / 2 - nt), num, font=fn, fill=(30, 30, 30))
+        y += 180
+    img.save(path)
+
+
 def end_png(path):
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
@@ -112,7 +136,7 @@ def end_png(path):
     f2 = ImageFont.truetype(FONT_BOLD, 46)
     f3 = ImageFont.truetype(FONT_HEAVY, 60)
     lines = [
-        ("다음 키 재는 날이\n벌써 기대돼요!", f1, "white", 1180),
+        ("한 달 뒤에\n다시 재볼게요!", f1, "white", 1180),
         ("우리 아이 영양루틴은 하우투키로", f2, (255, 214, 64), 1420),
         ("@hautuki.official", f3, "white", 1520),
     ]
@@ -137,6 +161,7 @@ for i, (name, ss, dur, pre) in enumerate(CLIPS):
 badge = os.path.join(WORK, "badge.png"); badge_png(badge)
 endc = os.path.join(WORK, "end.png"); end_png(endc)
 caps = []
+hp = os.path.join(WORK, "heights.png"); heights_png(hp); caps.append((hp, *HEIGHTS_TIME))
 for i, (a, b, m, sub) in enumerate(CAPTIONS):
     p = os.path.join(WORK, f"cap{i}.png"); caption_png(p, m, sub); caps.append((p, a, b))
 
@@ -156,9 +181,12 @@ for i in range(1, len(segs)):
 n = len(segs)
 for j, (p, a, b) in enumerate(overlays):
     k = n + j
-    fade = f"fade=t=in:st={a:.2f}:d=0.25:alpha=1"
+    fades = []
+    if a > 0.01:
+        fades.append(f"fade=t=in:st={a:.2f}:d=0.25:alpha=1")
     if b < TOTAL - 0.01:
-        fade += f",fade=t=out:st={b - 0.25:.2f}:d=0.25:alpha=1"
+        fades.append(f"fade=t=out:st={b - 0.25:.2f}:d=0.25:alpha=1")
+    fade = ",".join(fades) or "null"
     fc.append(f"[{k}:v]format=rgba,{fade}[o{j}]")
     fc.append(f"{last}[o{j}]overlay=0:0:enable='between(t,{a:.2f},{b:.2f})'[v{j}]")
     last = f"[v{j}]"
